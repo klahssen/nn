@@ -1,0 +1,8 @@
+github.com/klahssen/go-mat v1.0.0 h1:/bRU1r7dJEhk7PYB6yIGIqaqhQ+5Pkq6eY3C7g9F4vw=
+github.com/klahssen/go-mat v1.0.0/go.mod h1:AzgaCSuOghUPl5wfeD96Gr5Ek5do0uY1up6y2vypHvc=
+github.com/klahssen/nn/activation v0.0.0-20190121150706-dfcd10c0d28d h1:kasgU64vYPtbUUdAcO7YSdINGYgCpt3rLRkihnaeGFQ=
+github.com/klahssen/nn/activation v0.0.0-20190121150706-dfcd10c0d28d/go.mod h1:yhl8RBTMYXWTf3k0GPka25CDqFPG5Y1iC4gasqUXrIU=
+github.com/twiggg/math v0.0.0-20190121125245-783264a6a6f1 h1:ZREa7B1xZxn2qrmmpgCN4qgq2I8EC/INAl5h8C2QR6M=
+github.com/twiggg/math v0.0.0-20190121125245-783264a6a6f1/go.mod h1:GDEUnbjRURX65rJeJ2Rvm1ct4Bgh4KJJwOUA5dtmBKk=
+github.com/twiggg/math/mat64 v0.0.0-20190121125245-783264a6a6f1 h1:xH3yFzVG17g8k4/f+S750cudJasyNL3pbLdDsC18Lek=
+github.com/twiggg/math/mat64 v0.0.0-20190121125245-783264a6a6f1/go.mod h1:RF2NcoLd1qVMX9WaUEjGzsAgx/YoZq5JTiDHkVACvVI=
