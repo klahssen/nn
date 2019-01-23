@@ -1,29 +1,113 @@
 package activation
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
+
+//function types
+const (
+	FuncTypeSigmoid   = "sig"
+	FuncTypeTanh      = "tanh"
+	FuncTypeRelu      = "relu"
+	FuncTypeLeakyRelu = "leaky_relu"
+	FuncTypeElu       = "elu"
+	FuncTypeCustom    = "custom"
+)
+
+var validFtypes = map[string]struct{}{FuncTypeSigmoid: {}, FuncTypeTanh: {}, FuncTypeRelu: {}, FuncTypeLeakyRelu: {}, FuncTypeElu: {}, FuncTypeCustom: {}}
+
+//ValidateFType checks if valid function type
+func ValidateFType(ftype string) error {
+	if _, ok := validFtypes[ftype]; !ok {
+		return fmt.Errorf("invalid activation function type '%s': expected one of %v", ftype, getValidFTypes())
+	}
+	return nil
+}
+
+//getValidFuncTypes returns valid activation function types
+func getValidFTypes() []string {
+	valids := make([]string, len(validFtypes))
+	i := 0
+	for k := range validFtypes {
+		valids[i] = k
+		i++
+	}
+	return valids
+}
+
+//GetF generates an instance of F for a pair of activation function type and parameters
+func GetF(ftype string, params []float64) (F, error) {
+	if err := ValidateFType(ftype); err != nil {
+		return F{}, err
+	}
+	switch ftype {
+	case FuncTypeSigmoid:
+		return Sigmoid(), nil
+	case FuncTypeTanh:
+		return Tanh(), nil
+	case FuncTypeRelu:
+		return Relu(), nil
+	case FuncTypeLeakyRelu:
+		nparams := 1
+		if len(params) != nparams {
+			return F{}, fmt.Errorf("expected %d parameters for func '%s'", nparams, ftype)
+		}
+		return LeakyRelu(params[0]), nil
+	case FuncTypeElu:
+		nparams := 1
+		if len(params) != nparams {
+			return F{}, fmt.Errorf("expected %d parameters for func '%s'", nparams, ftype)
+		}
+		return Elu(params[0]), nil
+	default:
+		return F{}, fmt.Errorf("invalid function type '%s',expected one of %v", ftype, getValidFTypes())
+	}
+}
+
+//F holds a function and its derivative
+type F struct {
+	Func  func(x float64) float64
+	Deriv func(x float64) float64
+}
+
+//Sigmoid returns a sigmoid function with its derivative
+func Sigmoid() F {
+	return F{Func: sig, Deriv: derivSig}
+}
 
 //Sigmoid or logistic activation function
-func Sigmoid(x float64) float64 {
+func sig(x float64) float64 {
 	return 1 / (1 + math.Exp(-x))
 }
 
 //DerivSigmoid is Sigmoid's derivative
-func DerivSigmoid(x float64) float64 {
-	return Sigmoid(x) * (1 - Sigmoid(x))
+func derivSig(x float64) float64 {
+	return sig(x) * (1 - sig(x))
+}
+
+//Tanh returns hyperbolic tangent and its derivative
+func Tanh() F {
+	return F{Func: tanh, Deriv: derivTanh}
 }
 
 //Tanh or hyperbolic tangent
-func Tanh(x float64) float64 {
+func tanh(x float64) float64 {
 	return (math.Exp(x) - math.Exp(-x)) / (math.Exp(x) + math.Exp(-x))
 }
 
 //DerivTanh is Tanh's derivative
-func DerivTanh(x float64) float64 {
-	return 1 - Tanh(x)
+func derivTanh(x float64) float64 {
+	return 1 - tanh(x)
+}
+
+//Elu returns an exponential linear unit with its derivative
+func Elu(alpha float64) F {
+	return F{Func: newElu(alpha), Deriv: newDerivElu(alpha)}
 }
 
 //NewElu returns a parametrized Exponential Linear Unit
-func NewElu(alpha float64) func(x float64) float64 {
+func newElu(alpha float64) func(x float64) float64 {
 	return func(x float64) float64 {
 		if x > 0 {
 			return x
@@ -33,7 +117,7 @@ func NewElu(alpha float64) func(x float64) float64 {
 }
 
 //NewDerivElu returns the derivative of a parametrized Exponential Linear Unit
-func NewDerivElu(alpha float64) func(x float64) float64 {
+func newDerivElu(alpha float64) func(x float64) float64 {
 	return func(x float64) float64 {
 		if x > 0 {
 			return 1
@@ -42,8 +126,13 @@ func NewDerivElu(alpha float64) func(x float64) float64 {
 	}
 }
 
+//Relu returns a rectified linear unit and its derivative
+func Relu() F {
+	return F{Func: relu, Deriv: derivRelu}
+}
+
 //Relu rectified linear unit
-func Relu(x float64) float64 {
+func relu(x float64) float64 {
 	if x > 0 {
 		return x
 	}
@@ -51,15 +140,20 @@ func Relu(x float64) float64 {
 }
 
 //DerivRelu is Relu's derivative. Undefined for x=0
-func DerivRelu(x float64) float64 {
+func derivRelu(x float64) float64 {
 	if x > 0 {
 		return 1
 	}
 	return 0
 }
 
+//LeakyRelu returns a leaky rectified linear unit and its derivative
+func LeakyRelu(alpha float64) F {
+	return F{Func: newLeakyRelu(alpha), Deriv: newDerivLeakyRelu(alpha)}
+}
+
 //NewLeakyRelu adds a slight slope for x<=0
-func NewLeakyRelu(alpha float64) func(x float64) float64 {
+func newLeakyRelu(alpha float64) func(x float64) float64 {
 	return func(x float64) float64 {
 		if x > 0 {
 			return x
@@ -69,7 +163,7 @@ func NewLeakyRelu(alpha float64) func(x float64) float64 {
 }
 
 //NewDerivLeakyRelu is the derivative of a parametrized LeakyRelu. Undefined for x=0
-func NewDerivLeakyRelu(alpha float64) func(x float64) float64 {
+func newDerivLeakyRelu(alpha float64) func(x float64) float64 {
 	return func(x float64) float64 {
 		if x > 0 {
 			return 1

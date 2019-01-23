@@ -46,7 +46,7 @@ func (ff *FFN) SetLayers(configs ...*LayerConfig) error {
 		if err = l.Validate(); err != nil {
 			return fmt.Errorf("configs[%d]: %s", i, err.Error())
 		}
-		layers[i] = newLayer(prevSize, l.Size, l.Fn, l.Deriv)
+		layers[i] = newLayer(prevSize, l.Size, l.FuncType, l.FuncParams, l.F)
 		prevSize = l.Size
 	}
 	ff.layers = layers

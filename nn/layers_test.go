@@ -5,12 +5,13 @@ import (
 	"testing"
 
 	"github.com/klahssen/go-mat"
+	"github.com/klahssen/nn/activation"
 
 	"github.com/twiggg/tester"
 )
 
 func TestValidateLayerConfig(t *testing.T) {
-	iden := func(x float64) float64 { return x }
+	iden := activation.F{Func: func(x float64) float64 { return x }, Deriv: func(x float64) float64 { return 0.0 }}
 	te := tester.New(t)
 	tests := []struct {
 		l   *LayerConfig
@@ -18,8 +19,8 @@ func TestValidateLayerConfig(t *testing.T) {
 	}{
 		{&LayerConfig{Size: -1}, fmt.Errorf("size must be >0")},
 		{&LayerConfig{Size: 1}, fmt.Errorf("activation function is nil")},
-		{&LayerConfig{Size: 1, Fn: iden}, fmt.Errorf("derivative of activation function is nil")},
-		{&LayerConfig{Size: 1, Fn: iden, Deriv: iden}, nil},
+		{&LayerConfig{Size: 1, F: activation.F{Func: func(x float64) float64 { return x }}}, fmt.Errorf("derivative of activation function is nil")},
+		{&LayerConfig{Size: 1, F: iden}, nil},
 		{nil, fmt.Errorf("level config is nil")},
 	}
 	for ind, test := range tests {
@@ -54,8 +55,8 @@ func TestWxpb(t *testing.T) {
 }
 
 func TestUpdateLayerData(t *testing.T) {
-	iden := func(x float64) float64 { return x }
-	idenp := func(x float64) float64 { return 1 }
+	iden := activation.F{Func: func(x float64) float64 { return x }, Deriv: func(x float64) float64 { return 0 }}
+	//idenp := func(x float64) float64 { return 1 }
 	te := tester.New(t)
 	tests := []struct {
 		l    *layer
@@ -66,7 +67,7 @@ func TestUpdateLayerData(t *testing.T) {
 	}{
 		{
 
-			l:    newLayer(3, 2, iden, idenp),
+			l:    newLayer(3, 2, "custom", nil, iden),
 			data: []float64{1, 2, 3, 4, 5, 6, 7, 8},
 			w:    mat.NewM64(2, 3, []float64{1, 2, 3, 5, 6, 7}),
 			b:    mat.NewM64(2, 1, []float64{4, 8}),
@@ -85,9 +86,9 @@ func TestUpdateLayerData(t *testing.T) {
 
 func TestComputeLayerWith(t *testing.T) {
 	te := tester.New(t)
-	db := func(x float64) float64 { return 2.0 * x }
-	dbp := func(x float64) float64 { return 2.0 }
-	l1 := newLayer(3, 3, db, dbp)
+	db := activation.F{Func: func(x float64) float64 { return 2.0 * x }, Deriv: func(x float64) float64 { return 2.0 }}
+	//dbp := func(x float64) float64 { return 2.0 }
+	l1 := newLayer(3, 3, "custom", nil, db)
 	l1.UpdateData([]float64{1, 1, 1, 2, 1, 1, 1, 3, 1, 1, 1, 4})
 	tests := []struct {
 		l   *layer

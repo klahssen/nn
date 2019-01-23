@@ -53,8 +53,8 @@ var getFF2 = func(inSize int, keepStates bool, configs []*LayerConfig) *FFN {
 }
 
 func TestFFSetLayers(t *testing.T) {
-	f1 := activation.Sigmoid
-	f1p := activation.DerivSigmoid
+	f1 := activation.Sigmoid()
+	//f1p := activation.DerivSigmoid
 	te := tester.New(t)
 	tests := []struct {
 		ff      *FFN
@@ -65,10 +65,10 @@ func TestFFSetLayers(t *testing.T) {
 		{
 			ff: getFF(3, false),
 			configs: []*LayerConfig{
-				&LayerConfig{Size: 3, Fn: f1, Deriv: f1p},
+				&LayerConfig{Size: 3, FuncType: activation.FuncTypeSigmoid, FuncParams: nil},
 			},
 			exp: []*layer{
-				newLayer(3, 3, f1, f1p),
+				newLayer(3, 3, activation.FuncTypeSigmoid, nil, f1),
 			},
 			err: nil,
 		},
@@ -81,10 +81,10 @@ func TestFFSetLayers(t *testing.T) {
 		{
 			ff: getFF(3, true),
 			configs: []*LayerConfig{
-				&LayerConfig{Size: 3, Fn: f1, Deriv: f1p},
+				&LayerConfig{Size: 3, FuncType: activation.FuncTypeSigmoid, FuncParams: nil},
 			},
 			exp: []*layer{
-				newLayer(3, 3, f1, f1p),
+				newLayer(3, 3, activation.FuncTypeSigmoid, nil, f1),
 			},
 			err: nil,
 		},
@@ -124,7 +124,7 @@ func TestFFSetLayers(t *testing.T) {
 
 func TestFFGetState(t *testing.T) {
 	te := tester.New(t)
-	ff2 := getFF2(3, true, []*LayerConfig{{Size: 3, Fn: activation.Sigmoid, Deriv: activation.DerivSigmoid}})
+	ff2 := getFF2(3, true, []*LayerConfig{{Size: 3, F: activation.Sigmoid()}})
 	ff2.states = []*mat.M64{mat.NewM64(3, 3, nil)}
 	tests := []struct {
 		ff       *FFN
@@ -133,7 +133,7 @@ func TestFFGetState(t *testing.T) {
 		err      error
 	}{
 		{
-			ff:       getFF2(3, true, []*LayerConfig{{Size: 3, Fn: activation.Sigmoid, Deriv: activation.DerivSigmoid}}),
+			ff:       getFF2(3, true, []*LayerConfig{{Size: 3, F: activation.Sigmoid()}}),
 			layerInd: 0,
 			state:    mat.NewM64(3, 3, nil),
 			err:      fmt.Errorf("state is nil"),

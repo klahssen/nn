@@ -4,17 +4,19 @@ import (
 	"fmt"
 
 	mat "github.com/klahssen/go-mat"
+	"github.com/klahssen/nn/activation"
 )
 
 //ActivationFunc signature
-type ActivationFunc func(x float64) float64
+//type ActivationFunc func(x float64) float64
 
 //LayerConfig holds info to define a new layer
 type LayerConfig struct {
 	//InSize  int
-	Size  int
-	Fn    ActivationFunc
-	Deriv ActivationFunc
+	Size       int
+	FuncType   string
+	FuncParams []float64
+	F          activation.F
 }
 
 //Validate checks configuration data
@@ -25,24 +27,27 @@ func (l *LayerConfig) Validate() error {
 	if l.Size <= 0 {
 		return fmt.Errorf("size must be >0")
 	}
-	if l.Fn == nil {
-		return fmt.Errorf("activation function is nil")
-	}
-	if l.Deriv == nil {
-		return fmt.Errorf("derivative of activation function is nil")
+	if l.FuncType == "" {
+		if l.F.Func == nil {
+			return fmt.Errorf("activation function is nil")
+		}
+		if l.F.Deriv == nil {
+			return fmt.Errorf("derivative of activation function is nil")
+		}
+		l.FuncType = activation.FuncTypeCustom
 	}
 	return nil
 }
 
 //newLayer returns a new Level
-func newLayer(inSize int, outSize int, fn ActivationFunc, deriv ActivationFunc) *layer {
+func newLayer(inSize int, outSize int, ftype string, fparams []float64, f activation.F) *layer {
 	return &layer{
 		inSize:  inSize,
 		outSize: outSize,
 		w:       mat.NewM64(outSize, inSize, nil),
 		b:       mat.NewM64(outSize, 1, nil),
-		fn:      fn,
-		deriv:   deriv,
+		ftype:   ftype,
+		a:       f,
 	}
 }
 
@@ -52,18 +57,30 @@ type layer struct {
 	outSize int
 	w       *mat.M64
 	b       *mat.M64
-	fn      ActivationFunc
-	deriv   ActivationFunc
+	ftype   string
+	fparams []float64
+	a       activation.F
 }
 
 func (l *layer) Validate() error {
 	if l == nil {
 		return fmt.Errorf("layer is nil")
 	}
-	if l.fn == nil {
+	if err := activation.ValidateFType(l.ftype); err != nil {
+		return err
+	}
+	if l.ftype != activation.FuncTypeCustom {
+		F, err := activation.GetF(l.ftype, l.fparams)
+		if err != nil {
+			return err
+		}
+		l.a = F
+	}
+
+	if l.a.Func == nil {
 		return fmt.Errorf("activation function is nil")
 	}
-	if l.deriv == nil {
+	if l.a.Deriv == nil {
 		return fmt.Errorf("derivative of activation function is nil")
 	}
 	if l.inSize <= 0 {
@@ -140,7 +157,7 @@ func (l *layer) ComputeWith(input *mat.M64) (*mat.M64, error) {
 	if err != nil {
 		return nil, err
 	}
-	return mat.MapElem(res, l.fn)
+	return mat.MapElem(res, l.a.Func)
 }
 
 //wxpb computes the dot product of w and x then adds b
