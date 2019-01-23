@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/klahssen/go-mat"
-	"github.com/klahssen/nn/activation"
+	"github.com/klahssen/nn/internal/activation"
 
-	"github.com/twiggg/tester"
+	"github.com/klahssen/go-mat"
+
+	"github.com/klahssen/tester"
 )
 
 func TestValidateLayerConfig(t *testing.T) {
 	iden := activation.F{Func: func(x float64) float64 { return x }, Deriv: func(x float64) float64 { return 0.0 }}
-	te := tester.New(t)
+	te := tester.NewT(t)
 	tests := []struct {
 		l   *LayerConfig
 		err error
@@ -24,12 +25,12 @@ func TestValidateLayerConfig(t *testing.T) {
 		{nil, fmt.Errorf("level config is nil")},
 	}
 	for ind, test := range tests {
-		te.CompareError(ind, test.err, test.l.Validate())
+		te.CheckError(ind, test.err, test.l.Validate())
 	}
 }
 
 func TestWxpb(t *testing.T) {
-	te := tester.New(t)
+	te := tester.NewT(t)
 	tests := []struct {
 		w   *mat.M64
 		x   *mat.M64
@@ -47,7 +48,7 @@ func TestWxpb(t *testing.T) {
 	}
 	for ind, test := range tests {
 		res, err := wxpb(test.w, test.x, test.b)
-		te.CompareError(ind, test.err, err)
+		te.CheckError(ind, test.err, err)
 		if err == nil {
 			te.DeepEqual(ind, "res", test.res, res)
 		}
@@ -57,7 +58,7 @@ func TestWxpb(t *testing.T) {
 func TestUpdateLayerData(t *testing.T) {
 	iden := activation.F{Func: func(x float64) float64 { return x }, Deriv: func(x float64) float64 { return 0 }}
 	//idenp := func(x float64) float64 { return 1 }
-	te := tester.New(t)
+	te := tester.NewT(t)
 	tests := []struct {
 		l    *layer
 		data []float64
@@ -76,7 +77,7 @@ func TestUpdateLayerData(t *testing.T) {
 	}
 	for ind, test := range tests {
 		err := test.l.UpdateData(test.data)
-		te.CompareError(ind, test.err, err)
+		te.CheckError(ind, test.err, err)
 		if err == nil {
 			te.DeepEqual(ind, "w", test.w, test.l.w)
 			te.DeepEqual(ind, "b", test.b, test.l.b)
@@ -85,7 +86,7 @@ func TestUpdateLayerData(t *testing.T) {
 }
 
 func TestComputeLayerWith(t *testing.T) {
-	te := tester.New(t)
+	te := tester.NewT(t)
 	db := activation.F{Func: func(x float64) float64 { return 2.0 * x }, Deriv: func(x float64) float64 { return 2.0 }}
 	//dbp := func(x float64) float64 { return 2.0 }
 	l1 := newLayer(3, 3, "custom", nil, db)
@@ -105,7 +106,7 @@ func TestComputeLayerWith(t *testing.T) {
 	}
 	for ind, test := range tests {
 		res, err := test.l.ComputeWith(test.x)
-		te.CompareError(ind, test.err, err)
+		te.CheckError(ind, test.err, err)
 		if err == nil {
 			te.DeepEqual(ind, "res", test.res, res)
 		}

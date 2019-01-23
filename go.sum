@@ -1,0 +1,8 @@
+github.com/klahssen/go-mat v1.0.0 h1:/bRU1r7dJEhk7PYB6yIGIqaqhQ+5Pkq6eY3C7g9F4vw=
+github.com/klahssen/go-mat v1.0.0/go.mod h1:AzgaCSuOghUPl5wfeD96Gr5Ek5do0uY1up6y2vypHvc=
+github.com/klahssen/nn v0.0.0-20190123124508-49d7ddcc5c87 h1:h6N7mjOBjNKR+R6JypOtTQHrekM1aI6NRFH3+h8/c3w=
+github.com/klahssen/nn/activation v0.0.0-20190123124508-49d7ddcc5c87 h1:oJQFqyNf6KlkwzHZkq0j0aGHEcor50in80QjGVtgEu8=
+github.com/klahssen/nn/activation v0.0.0-20190123124508-49d7ddcc5c87/go.mod h1:fwJ63Xd7/ToN0iOnBADZZXl1BcC2yhkE9aLakLoBmNQ=
+github.com/klahssen/tester v1.0.0/go.mod h1:8NHrn9uFpAlsy2HrN221/DqDVEDx2hYA2SLArDAXCbk=
+github.com/klahssen/tester v1.0.1 h1:+q5fGfpOl+nzJRkyJ0NYRRNAvevMwA8+XM0K63fuNmI=
+github.com/klahssen/tester v1.0.1/go.mod h1:8NHrn9uFpAlsy2HrN221/DqDVEDx2hYA2SLArDAXCbk=

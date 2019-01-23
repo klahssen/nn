@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	mat "github.com/klahssen/go-mat"
-	"github.com/klahssen/nn/activation"
+	"github.com/klahssen/nn/internal/activation"
 
-	"github.com/twiggg/tester"
+	"github.com/klahssen/tester"
 )
 
 func TestNewFF(t *testing.T) {
-	te := tester.New(t)
+	te := tester.NewT(t)
 	tests := []struct {
 		inSize     int
 		keepStates bool
@@ -33,7 +33,7 @@ func TestNewFF(t *testing.T) {
 	}
 	for ind, test := range tests {
 		ff, err := NewFFN(test.inSize, test.keepStates)
-		te.CompareError(ind, test.err, err)
+		te.CheckError(ind, test.err, err)
 		if err == nil {
 			te.DeepEqual(ind, "network", test.ff, ff)
 		}
@@ -55,7 +55,7 @@ var getFF2 = func(inSize int, keepStates bool, configs []*LayerConfig) *FFN {
 func TestFFSetLayers(t *testing.T) {
 	f1 := activation.Sigmoid()
 	//f1p := activation.DerivSigmoid
-	te := tester.New(t)
+	te := tester.NewT(t)
 	tests := []struct {
 		ff      *FFN
 		configs []*LayerConfig
@@ -92,7 +92,7 @@ func TestFFSetLayers(t *testing.T) {
 
 	for ind, test := range tests {
 		err := test.ff.SetLayers(test.configs...)
-		te.CompareError(ind, test.err, err)
+		te.CheckError(ind, test.err, err)
 		if err == nil {
 			l1 := len(test.exp)
 			l2 := len(test.ff.layers)
@@ -123,7 +123,7 @@ func TestFFSetLayers(t *testing.T) {
 }
 
 func TestFFGetState(t *testing.T) {
-	te := tester.New(t)
+	te := tester.NewT(t)
 	ff2 := getFF2(3, true, []*LayerConfig{{Size: 3, F: activation.Sigmoid()}})
 	ff2.states = []*mat.M64{mat.NewM64(3, 3, nil)}
 	tests := []struct {
@@ -159,7 +159,7 @@ func TestFFGetState(t *testing.T) {
 	}
 	for ind, test := range tests {
 		state, err := test.ff.GetState(test.layerInd)
-		te.CompareError(ind, test.err, err)
+		te.CheckError(ind, test.err, err)
 		if err == nil {
 			te.DeepEqual(ind, "state", test.state, state)
 		}

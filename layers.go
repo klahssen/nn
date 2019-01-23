@@ -3,8 +3,9 @@ package nn
 import (
 	"fmt"
 
+	"github.com/klahssen/nn/internal/activation"
+
 	mat "github.com/klahssen/go-mat"
-	"github.com/klahssen/nn/activation"
 )
 
 //ActivationFunc signature

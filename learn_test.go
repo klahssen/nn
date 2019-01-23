@@ -4,11 +4,11 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/twiggg/tester"
+	"github.com/klahssen/tester"
 )
 
 func TestSelectDrops(t *testing.T) {
-	te := tester.New(t)
+	te := tester.NewT(t)
 	tests := []struct {
 		r         rand.Source
 		dropSize  int
