@@ -3,6 +3,8 @@ package activation
 import (
 	"fmt"
 	"math"
+	"sort"
+	"strings"
 )
 
 //function types
@@ -20,7 +22,7 @@ var validFtypes = map[string]struct{}{FuncTypeSigmoid: {}, FuncTypeTanh: {}, Fun
 //ValidateFType checks if valid function type
 func ValidateFType(ftype string) error {
 	if _, ok := validFtypes[ftype]; !ok {
-		return fmt.Errorf("invalid activation function type '%s': expected one of %v", ftype, getValidFTypes())
+		return fmt.Errorf("invalid activation function type '%s': expected one of [%s]", ftype, strings.Join(getValidFTypes(), ", "))
 	}
 	return nil
 }
@@ -33,6 +35,7 @@ func getValidFTypes() []string {
 		valids[i] = k
 		i++
 	}
+	sort.Strings(valids)
 	return valids
 }
 
@@ -51,17 +54,17 @@ func GetF(ftype string, params []float64) (F, error) {
 	case FuncTypeLeakyRelu:
 		nparams := 1
 		if len(params) != nparams {
-			return F{}, fmt.Errorf("expected %d parameters for func '%s'", nparams, ftype)
+			return F{}, fmt.Errorf("expected %d parameter(s) for func '%s'", nparams, ftype)
 		}
 		return LeakyRelu(params[0]), nil
 	case FuncTypeElu:
 		nparams := 1
 		if len(params) != nparams {
-			return F{}, fmt.Errorf("expected %d parameters for func '%s'", nparams, ftype)
+			return F{}, fmt.Errorf("expected %d parameter(s) for func '%s'", nparams, ftype)
 		}
 		return Elu(params[0]), nil
 	default:
-		return F{}, fmt.Errorf("invalid function type '%s',expected one of %v", ftype, getValidFTypes())
+		return F{}, fmt.Errorf("invalid activation function type '%s': expected one of [%s]", ftype, strings.Join(getValidFTypes(), ", "))
 	}
 }
 
