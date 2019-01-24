@@ -14,10 +14,11 @@ const (
 	FuncTypeRelu      = "relu"
 	FuncTypeLeakyRelu = "leaky_relu"
 	FuncTypeElu       = "elu"
+	FuncTypeIden      = "iden"
 	FuncTypeCustom    = "custom"
 )
 
-var validFtypes = map[string]struct{}{FuncTypeSigmoid: {}, FuncTypeTanh: {}, FuncTypeRelu: {}, FuncTypeLeakyRelu: {}, FuncTypeElu: {}, FuncTypeCustom: {}}
+var validFtypes = map[string]struct{}{FuncTypeSigmoid: {}, FuncTypeTanh: {}, FuncTypeRelu: {}, FuncTypeLeakyRelu: {}, FuncTypeElu: {}, FuncTypeIden: {}, FuncTypeCustom: {}}
 
 //ValidateFType checks if valid function type
 func ValidateFType(ftype string) error {
@@ -45,6 +46,8 @@ func GetF(ftype string, params []float64) (F, error) {
 		return F{}, err
 	}
 	switch ftype {
+	case FuncTypeIden:
+		return Iden(), nil
 	case FuncTypeSigmoid:
 		return Sigmoid(), nil
 	case FuncTypeTanh:
@@ -173,6 +176,21 @@ func newDerivLeakyRelu(alpha float64) func(x float64) float64 {
 		}
 		return alpha
 	}
+}
+
+//Iden returns the identity function and its derivative
+func Iden() F {
+	return F{Func: iden, Deriv: derivIden}
+}
+
+//iden returns x
+func iden(x float64) float64 {
+	return x
+}
+
+//derivIden is iden's derivative
+func derivIden(x float64) float64 {
+	return 1
 }
 
 //Softmax?

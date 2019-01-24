@@ -14,6 +14,7 @@ import (
 //LayerConfig holds info to define a new layer
 type LayerConfig struct {
 	//InSize  int
+	KeepState  bool
 	Size       int
 	FuncType   string
 	FuncParams []float64
@@ -36,6 +37,12 @@ func (l *LayerConfig) Validate() error {
 			return fmt.Errorf("derivative of activation function is nil")
 		}
 		l.FuncType = activation.FuncTypeCustom
+	} else {
+		f, err := activation.GetF(l.FuncType, l.FuncParams)
+		if err != nil {
+			return err
+		}
+		l.F = f
 	}
 	return nil
 }
@@ -48,19 +55,35 @@ func newLayer(inSize int, outSize int, ftype string, fparams []float64, f activa
 		w:       mat.NewM64(outSize, inSize, nil),
 		b:       mat.NewM64(outSize, 1, nil),
 		ftype:   ftype,
+		fparams: fparams,
 		a:       f,
 	}
+
 }
 
 //layer represents a layer of neurons, defined by Y=fn(w*X+b) where X is the input, Y the output,fn the activation function, W the weights matrix and b the bias.
 type layer struct {
-	inSize  int
-	outSize int
-	w       *mat.M64
-	b       *mat.M64
-	ftype   string
-	fparams []float64
-	a       activation.F
+	keepState bool
+	state     *mat.M64
+	inSize    int
+	outSize   int
+	w         *mat.M64
+	b         *mat.M64
+	ftype     string
+	fparams   []float64
+	a         activation.F
+}
+
+func (l *layer) Config() *LayerConfig {
+	if l == nil {
+		return nil
+	}
+	return &LayerConfig{
+		Size:       l.outSize,
+		KeepState:  l.keepState,
+		FuncType:   l.ftype,
+		FuncParams: l.fparams,
+	}
 }
 
 func (l *layer) Validate() error {
@@ -117,6 +140,11 @@ func (l *layer) IsUsable() error {
 	if c != 1 {
 		return fmt.Errorf("bias vector should have 1 colomns not %d", c)
 	}
+	if l.keepState {
+		l.state = mat.NewM64(r, c, nil)
+	} else {
+		l.state = nil
+	}
 	return nil
 }
 
@@ -154,11 +182,18 @@ func (l *layer) UpdateData(data []float64) error {
 }
 
 func (l *layer) ComputeWith(input *mat.M64) (*mat.M64, error) {
+	if l == nil {
+		return nil, fmt.Errorf("layer is nil")
+	}
 	res, err := wxpb(l.w, input, l.b)
 	if err != nil {
 		return nil, err
 	}
-	return mat.MapElem(res, l.a.Func)
+	res, err = mat.MapElem(res, l.a.Func)
+	if err == nil && l.keepState {
+		l.state = res
+	}
+	return res, err
 }
 
 //wxpb computes the dot product of w and x then adds b
