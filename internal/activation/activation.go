@@ -193,4 +193,32 @@ func derivIden(x float64) float64 {
 	return 1
 }
 
+//Power returns x^n and its derivative
+func Power(coef float64, n uint) F {
+	return F{Func: newPower(coef, n), Deriv: newDerivPower(coef, n)}
+}
+
+func newPower(coef float64, n uint) func(x float64) float64 {
+	return func(x float64) float64 {
+		return coef * math.Pow(x, float64(n))
+	}
+}
+func newDerivPower(coef float64, n uint) func(x float64) float64 {
+	return func(x float64) float64 {
+		return coef * float64(n) * math.Pow(x, float64(n-1))
+	}
+}
+
+//Abs returnsthe absolute value function and its derivative
+func Abs() F {
+	return F{Func: math.Abs, Deriv: derivAbs}
+}
+
+func derivAbs(x float64) float64 {
+	if x < 0 {
+		return -1.0
+	}
+	return 1.0
+}
+
 //Softmax?

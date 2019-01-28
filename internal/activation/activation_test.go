@@ -27,3 +27,22 @@ func TestGetF(t *testing.T) {
 		te.CheckError(ind, test.err, err)
 	}
 }
+
+func TestNewPower(t *testing.T) {
+	te := tester.NewT(t)
+	tests := []struct {
+		n    uint
+		coef float64
+		x    float64
+		res  float64
+	}{
+		{2, 1.0, 2.0, 4.0},
+		{3, 1.0, 2.0, 8.0},
+		{2, 2.0, 2.0, 8.0},
+	}
+	for ind, test := range tests {
+		f := newPower(test.coef, test.n)
+		res := f(test.x)
+		te.DeepEqual(ind, "res", test.res, res)
+	}
+}
