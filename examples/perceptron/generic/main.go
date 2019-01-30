@@ -91,7 +91,9 @@ func Learn(inSize int, batchSize int, learningRate float64, costFn activation.F,
 		return nil, fmt.Errorf("cost derivative is nil")
 	}
 	fmt.Printf("create perceptron\n")
-	p, err := nn.NewPerceptron(inSize, learningRate, activation.Iden(), costFn)
+	ftype := "iden"
+	fparams := []float64{}
+	p, err := nn.NewPerceptron(inSize, learningRate, ftype, fparams, activation.Iden(), costFn)
 	if err != nil {
 		return nil, err
 	}

@@ -11,30 +11,73 @@ import (
 
 //Perceptron is the simplest neuron, representing a function P. It applies an activation function f to s which is the weighted sum of its inputs + bias: output=f(w*x+b). the multiplication here is a dot product and wx+b is a scalar
 type Perceptron struct {
-	inSize int
-	w      *mat.M64 //size 1*inSize
-	f      activation.F
-	cost   activation.F
-	b      float64
-	alpha  float64 //learning rate
-	s      float64
-	a      float64
+	inSize  int
+	w       *mat.M64 //size 1*inSize
+	ftype   string
+	fparams []float64
+	f       activation.F
+	cost    activation.F
+	b       float64
+	alpha   float64 //learning rate
+	s       float64
+	a       float64
+}
+
+//Size returns the size expected for the input vector
+func (p *Perceptron) Size() int {
+	return p.inSize
 }
 
 //Perceptron is the simplest neuron, representing a function P. It applies an activation function f to s which is the weighted sum of its inputs + bias: output=f(w*x+b). the multiplication here is a dot product and wx+b is a scalar
 type publicPerceptron struct {
-	InSize int          `json:"in_size"`
-	W      []float64    `json:"w"` //size 1*inSize
-	F      activation.F `json:"-"`
-	Cost   activation.F `json:"-"`
-	B      float64      `json:"b"`
-	Alpha  float64      `json:"alpha"` //learning rate
-	S      float64      `json:"s"`
-	A      float64      `json:"a"`
+	InSize  int          `json:"in_size"`
+	W       []float64    `json:"w"` //size 1*inSize
+	F       activation.F `json:"-"`
+	Cost    activation.F `json:"-"`
+	Ftype   string       `json:"ftype"`
+	Fparams []float64    `json:"fparams"`
+	B       float64      `json:"b"`
+	Alpha   float64      `json:"alpha"` //learning rate
+	S       float64      `json:"s"`
+	A       float64      `json:"a"`
 }
 
 func (p *Perceptron) export() *publicPerceptron {
-	return &publicPerceptron{InSize: p.inSize, W: p.w.GetData(), F: p.f, Cost: p.cost, B: p.b, Alpha: p.alpha, S: p.s, A: p.a}
+	return &publicPerceptron{InSize: p.inSize, W: p.w.GetData(), F: p.f, Cost: p.cost, Ftype: p.ftype, Fparams: p.fparams, B: p.b, Alpha: p.alpha, S: p.s, A: p.a}
+}
+
+func (p *Perceptron) inject(def *publicPerceptron) error {
+	if p == nil {
+		return fmt.Errorf("perceptron is nil")
+	}
+	if def == nil {
+		return fmt.Errorf("definition is nil")
+	}
+	p.inSize = def.InSize
+	p.w = mat.NewM64(1, p.inSize, def.W)
+	p.ftype = def.Ftype
+	p.fparams = def.Fparams
+	p.b = def.B
+	p.alpha = def.Alpha
+	p.s = def.S
+	p.a = def.A
+	F, err := activation.GetF(p.ftype, p.fparams)
+	p.f = F
+	return err
+}
+
+//FromJSON unmarshals the config and sets the Perceptron's definition
+func (p *Perceptron) FromJSON(filename string) error {
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil
+	}
+	pp := &publicPerceptron{}
+	err = json.Unmarshal(b, pp)
+	if err != nil {
+		return err
+	}
+	return p.inject(pp)
 }
 
 //JSON stores the neuron's definition in  a json file
@@ -125,14 +168,22 @@ func (p *Perceptron) BackProp(x *mat.M64, err float64) {
 }
 
 //NewPerceptron is a Peceptron constructor
-func NewPerceptron(inSize int, learningRate float64, f, cost activation.F) (*Perceptron, error) {
+func NewPerceptron(inSize int, learningRate float64, ftype string, fparams []float64, f, cost activation.F) (*Perceptron, error) {
 	if inSize <= 0 {
 		return nil, fmt.Errorf("input size is <=0")
 	}
 	if learningRate <= 0 || learningRate > 1 {
 		return nil, fmt.Errorf("learning rate must be in ]0;1]")
 	}
-	p := &Perceptron{inSize: inSize, w: mat.NewM64(1, inSize, nil), f: f, cost: cost, alpha: learningRate, b: 0.0}
+
+	p := &Perceptron{inSize: inSize, w: mat.NewM64(1, inSize, nil), ftype: ftype, fparams: fparams, f: f, cost: cost, alpha: learningRate, b: 0.0}
+	if ftype != activation.FuncTypeCustom {
+		f2, err := activation.GetF(ftype, fparams)
+		if err != nil {
+			return nil, err
+		}
+		p.f = f2
+	}
 	err := p.Validate()
 	return p, err
 }
