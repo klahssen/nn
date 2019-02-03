@@ -70,8 +70,8 @@ func TestUpdateLayerData(t *testing.T) {
 
 			l:    newLayer(3, 2, "custom", nil, iden),
 			data: []float64{1, 2, 3, 4, 5, 6, 7, 8},
-			w:    mat.NewM64(2, 3, []float64{1, 2, 3, 5, 6, 7}),
-			b:    mat.NewM64(2, 1, []float64{4, 8}),
+			w:    mat.NewM64(2, 3, []float64{1, 2, 3, 4, 5, 6}),
+			b:    mat.NewM64(2, 1, []float64{7, 8}),
 			err:  nil,
 		},
 	}
@@ -90,7 +90,7 @@ func TestComputeLayerWith(t *testing.T) {
 	db := activation.F{Func: func(x float64) float64 { return 2.0 * x }, Deriv: func(x float64) float64 { return 2.0 }}
 	//dbp := func(x float64) float64 { return 2.0 }
 	l1 := newLayer(3, 3, "custom", nil, db)
-	l1.UpdateData([]float64{1, 1, 1, 2, 1, 1, 1, 3, 1, 1, 1, 4})
+	l1.UpdateData([]float64{1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 4})
 	tests := []struct {
 		l   *layer
 		x   *mat.M64
@@ -105,10 +105,169 @@ func TestComputeLayerWith(t *testing.T) {
 		},
 	}
 	for ind, test := range tests {
-		res, err := test.l.ComputeWith(test.x)
+		res, err := test.l.FeedForward(test.x)
 		te.CheckError(ind, test.err, err)
 		if err == nil {
 			te.DeepEqual(ind, "res", test.res, res)
 		}
+	}
+}
+
+func TestLayerBackprop(t *testing.T) {
+	te := tester.NewT(t)
+	l1 := newLayer(2, 1, "iden", nil, activation.Iden())
+	l1.keepState = true
+	l1.UpdateData([]float64{1, 2, 0})
+	l2 := newLayer(2, 2, "iden", nil, activation.Iden())
+	l2.keepState = true
+	l2.UpdateData([]float64{1, 2, 1, 2, 0,0})
+	//fmt.Printf("l1.b:\n%+v\n", l1.b)
+	tests := []struct {
+		l             *layer
+		lr            float64
+		w             *mat.M64
+		in            *mat.M64
+		gradSig       *mat.M64
+		gradCost      *mat.M64
+		isOutputLayer bool
+		cprimea       *mat.M64
+		newW          *mat.M64
+		newB          *mat.M64
+		err           error
+	}{
+		{
+			l:             l1,
+			lr:            0.5,
+			w:             nil,
+			in:            mat.NewM64(2, 1, []float64{1, 2}),
+			gradSig:       nil,
+			gradCost:      mat.NewM64(1, 1, []float64{0.5}),
+			isOutputLayer: true,
+			cprimea:       mat.NewM64(1, 1, []float64{0.5}),
+			newW:          mat.NewM64(1, 2, []float64{0.75,1.5}),
+			newB:          mat.NewM64(1, 1, []float64{-0.25}),
+			err:           nil,
+		},
+		{
+			l:             l1,
+			lr:            0.5,
+			w:             nil,
+			in:            mat.NewM64(2, 1, []float64{1, 2}),
+			gradSig:       nil,
+			gradCost:      mat.NewM64(1, 1, []float64{0.5}),
+			isOutputLayer: false,
+			cprimea:       mat.NewM64(1, 1, []float64{0.5}),
+			newW:          nil,
+			newB:          nil,
+			err:           fmt.Errorf("activation gradient vector is nil"),
+		},
+		{
+			l:             l1,
+			lr:            0.5,
+			w:             nil,
+			in:            mat.NewM64(2, 1, []float64{1, 2}),
+			gradSig:       mat.NewM64(1, 1, []float64{1}),
+			gradCost:      nil,
+			isOutputLayer: false,
+			cprimea:       mat.NewM64(1, 1, []float64{0.5}),
+			newW:          nil,
+			newB:          nil,
+			err:           fmt.Errorf("cost gradient vector is nil"),
+		},
+		{
+			l:             nil,
+			lr:            0.5,
+			w:             nil,
+			in:            mat.NewM64(2, 1, []float64{1, 2}),
+			gradSig:       mat.NewM64(1, 1, []float64{1}),
+			gradCost:      nil,
+			isOutputLayer: false,
+			cprimea:       mat.NewM64(1, 1, []float64{0.5}),
+			newW:          nil,
+			newB:          nil,
+			err:           fmt.Errorf("layer is nil"),
+		},
+		{
+			l:             l1,
+			lr:            -0.5,
+			w:             nil,
+			in:            mat.NewM64(2, 1, []float64{1, 2}),
+			gradSig:       mat.NewM64(1, 1, []float64{1}),
+			gradCost:      nil,
+			isOutputLayer: false,
+			cprimea:       mat.NewM64(1, 1, []float64{0.5}),
+			newW:          nil,
+			newB:          nil,
+			err:           fmt.Errorf("learning rate must be in range ]0;1]"),
+		},
+		{
+			l:             l1,
+			lr:            0.5,
+			w:             nil,
+			in:            nil,
+			gradSig:       mat.NewM64(1, 1, []float64{1}),
+			gradCost:      mat.NewM64(1, 1, []float64{0.5}),
+			isOutputLayer: false,
+			cprimea:       mat.NewM64(1, 1, []float64{0.5}),
+			newW:          nil,
+			newB:          nil,
+			err:           fmt.Errorf("local input vector is nil"),
+		},
+		{
+			l:             l1,
+			lr:            0.5,
+			w:             nil,
+			in:            mat.NewM64(2, 1, []float64{1, 2}),
+			gradSig:       mat.NewM64(1, 1, []float64{1}),
+			gradCost:      mat.NewM64(1, 1, []float64{0.5}),
+			isOutputLayer: false,
+			cprimea:       mat.NewM64(1, 1, []float64{0.5}),
+			newW:          nil,
+			newB:          nil,
+			err:           fmt.Errorf("weight matrix is nil"),
+		},
+		{
+			l:             l1,
+			lr:            0.5,
+			w:             nil,
+			in:            mat.NewM64(2, 1, []float64{1, 2}),
+			gradSig:       mat.NewM64(1, 1, []float64{1}),
+			gradCost:      mat.NewM64(1, 1, []float64{0.5}),
+			isOutputLayer: false,
+			cprimea:       mat.NewM64(1, 1, []float64{0.5}),
+			newW:          nil,
+			newB:          nil,
+			err:           fmt.Errorf("weight matrix is nil"),
+		},
+		{
+			l:             l2,
+			lr:            0.5,
+			w:             mat.NewM64(1, 2, []float64{1, 2}),
+			in:            mat.NewM64(2, 1, []float64{1, 2}),
+			gradSig:       mat.NewM64(1, 1, []float64{1}),
+			gradCost:      mat.NewM64(1, 1, []float64{0.5}),
+			isOutputLayer: false,
+			cprimea:       mat.NewM64(2, 1, []float64{0.5, 1}),
+			newW:          mat.NewM64(2, 2, []float64{0.75,1.5,0.5,1}),
+			newB:          mat.NewM64(2, 1, []float64{-0.25,-0.5}),
+			err:           nil, //fmt.Errorf("failed to compute gradient of bias vector: m,n rows not equal"),
+		},
+	}
+
+	for ind, test := range tests {
+		//fmt.Printf("test %d\n",ind)
+		test.l.FeedForward(test.in)
+		/*if err != nil {
+			t.Errorf("test %d: failed to feed input to the layer: %s", ind, err.Error())
+			continue
+		}*/
+		gradCost, err := test.l.Backprop(test.lr, test.in, test.gradCost, test.gradSig, test.w, test.isOutputLayer)
+		te.CheckError(ind, test.err, err)
+		if err != nil {
+			continue
+		}
+		te.DeepEqual(ind, "cost gradient", test.cprimea, gradCost)
+		te.DeepEqual(ind, "new w", test.newW, test.l.w)
+		te.DeepEqual(ind, "new b", test.newB, test.l.b)
 	}
 }

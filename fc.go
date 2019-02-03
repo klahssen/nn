@@ -6,27 +6,37 @@ import (
 	"github.com/klahssen/go-mat"
 )
 
-//FFN represents a simple feed forward neural network
-type FFN struct {
+//FC represents a simple fully connected feed forward neural network
+type FC struct {
 	inSize  int
 	outSize int
 	layers  []*layer
 }
 
-//NewFFN returns a new instance of FeedForward Neural Network, with no layers
-func NewFFN(inSize int) (*FFN, error) {
+//NewFC returns a new instance of Fully Connected FeedForward Neural Network, with no layers
+func NewFC(inSize int) (*FC, error) {
 	if inSize < 1 {
 		return nil, fmt.Errorf("minimum input size is 1")
 	}
-	ff := &FFN{
+	ff := &FC{
 		inSize:  inSize,
 		outSize: inSize,
 	}
 	return ff, nil
 }
 
+//init sets all weights and bias to 1 in each layer
+func (ff *FC) init() {
+	if ff == nil {
+		return
+	}
+	for i := range ff.layers {
+		ff.layers[i].init()
+	}
+}
+
 //SetLayers sets neuron layers connected via w,b,fn. Must have at least 1 layer
-func (ff *FFN) SetLayers(configs ...*LayerConfig) error {
+func (ff *FC) SetLayers(configs ...*LayerConfig) error {
 	var err error
 	n := len(configs)
 	if n < 1 {
@@ -43,6 +53,7 @@ func (ff *FFN) SetLayers(configs ...*LayerConfig) error {
 		lay := newLayer(prevSize, l.Size, l.FuncType, l.FuncParams, l.F)
 		if l.KeepState {
 			lay.state = mat.NewM64(l.Size, 1, nil)
+			lay.keepState = true
 		}
 		layers[i] = lay
 		prevSize = l.Size
@@ -53,7 +64,7 @@ func (ff *FFN) SetLayers(configs ...*LayerConfig) error {
 }
 
 //SetLayerData sets W and B matrices in layer at layerInd
-func (ff *FFN) SetLayerData(layerInd int, data []float64) error {
+func (ff *FC) SetLayerData(layerInd int, data []float64) error {
 	if ff == nil {
 		return fmt.Errorf("network is nil")
 	}
@@ -65,7 +76,7 @@ func (ff *FFN) SetLayerData(layerInd int, data []float64) error {
 }
 
 //Validate checks if network is runnable
-func (ff *FFN) Validate() error {
+func (ff *FC) validate() error {
 	if ff == nil {
 		return fmt.Errorf("network is nil")
 	}
@@ -88,8 +99,8 @@ func (ff *FFN) Validate() error {
 }
 
 //Info prints a summary of the network's definition
-func (ff *FFN) Info() {
-	if err := ff.Validate(); err != nil {
+func (ff *FC) Info() {
+	if err := ff.validate(); err != nil {
 		panic(err)
 	}
 	neurons := 0
@@ -98,19 +109,19 @@ func (ff *FFN) Info() {
 	for i, l := range ff.layers {
 		neurons += l.outSize
 		//defs[i] = l.Config()
-		fmt.Printf("- Layer %d:\nneurons: %d\nactivation type: '%s'\nactivation params: %v\n\n", i+1, l.outSize, l.ftype, l.fparams)
+		fmt.Printf("- Layer %d:\nneuron(s): %d\nactivation type: '%s'\nactivation params: %v\n\n", i+1, l.outSize, l.ftype, l.fparams)
 	}
 
-	fmt.Printf("Total: %d neurons\n=========================================================\n\n\n", neurons)
+	fmt.Printf("Total: %d neuron(s)\n=========================================================\n\n\n", neurons)
 }
 
-//Feed feeds data forward from input, returns output layer's state
-func (ff *FFN) Feed(input *mat.M64) (*mat.M64, error) {
+//FeedForward feeds data forward from input, returns output layer's state
+func (ff *FC) FeedForward(input *mat.M64) (*mat.M64, error) {
 	in := input
 	var out *mat.M64
 	var err error
 	for i, l := range ff.layers {
-		out, err = l.ComputeWith(in)
+		out, err = l.FeedForward(in)
 		if err != nil {
 			return nil, fmt.Errorf("layer[%d]: %s", i, err.Error())
 		}
@@ -119,8 +130,42 @@ func (ff *FFN) Feed(input *mat.M64) (*mat.M64, error) {
 	return out, nil
 }
 
+//Backprop the cost gradient
+func (ff *FC) Backprop(lr float64, in, gradCost *mat.M64) error {
+	if ff == nil {
+		return fmt.Errorf("network is nil")
+	}
+	if in == nil {
+		return fmt.Errorf("input is nil")
+	}
+	if gradCost == nil {
+		return fmt.Errorf("cost gradient is nil")
+	}
+	var err error
+	n := len(ff.layers)
+	ind := 0
+	var next *layer
+	for i := range ff.layers {
+		ind = (n - 1) - i
+		if i == 0 {
+			//output layer
+			gradCost, err = ff.layers[ind].Backprop(lr, in, gradCost, nil, nil, true)
+			if err != nil {
+				return fmt.Errorf("layer %d: %s", ind, err.Error())
+			}
+			next = ff.layers[ind]
+		} else {
+			gradCost, err = ff.layers[ind].Backprop(lr, in, gradCost, next.gradSig, next.w, false)
+			if err != nil {
+				return fmt.Errorf("layer %d: %s", ind, err.Error())
+			}
+		}
+	}
+	return nil
+}
+
 //GetState returns the output values of a layer if keepStates==true or an error
-func (ff *FFN) GetState(layerInd int) (*mat.M64, error) {
+func (ff *FC) GetState(layerInd int) (*mat.M64, error) {
 	if ff == nil {
 		return nil, fmt.Errorf("network is nil")
 	}
