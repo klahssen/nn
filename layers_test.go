@@ -120,8 +120,7 @@ func TestLayerBackprop(t *testing.T) {
 	l1.UpdateData([]float64{1, 2, 0})
 	l2 := newLayer(2, 2, "iden", nil, activation.Iden())
 	l2.keepState = true
-	l2.UpdateData([]float64{1, 2, 1, 2, 0,0})
-	//fmt.Printf("l1.b:\n%+v\n", l1.b)
+	l2.UpdateData([]float64{1, 2, 1, 2, 0, 0})
 	tests := []struct {
 		l             *layer
 		lr            float64
@@ -144,7 +143,7 @@ func TestLayerBackprop(t *testing.T) {
 			gradCost:      mat.NewM64(1, 1, []float64{0.5}),
 			isOutputLayer: true,
 			cprimea:       mat.NewM64(1, 1, []float64{0.5}),
-			newW:          mat.NewM64(1, 2, []float64{0.75,1.5}),
+			newW:          mat.NewM64(1, 2, []float64{0.75, 1.5}),
 			newB:          mat.NewM64(1, 1, []float64{-0.25}),
 			err:           nil,
 		},
@@ -248,9 +247,9 @@ func TestLayerBackprop(t *testing.T) {
 			gradCost:      mat.NewM64(1, 1, []float64{0.5}),
 			isOutputLayer: false,
 			cprimea:       mat.NewM64(2, 1, []float64{0.5, 1}),
-			newW:          mat.NewM64(2, 2, []float64{0.75,1.5,0.5,1}),
-			newB:          mat.NewM64(2, 1, []float64{-0.25,-0.5}),
-			err:           nil, //fmt.Errorf("failed to compute gradient of bias vector: m,n rows not equal"),
+			newW:          mat.NewM64(2, 2, []float64{0.75, 1.5, 0.5, 1}),
+			newB:          mat.NewM64(2, 1, []float64{-0.25, -0.5}),
+			err:           nil,
 		},
 	}
 

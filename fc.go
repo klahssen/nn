@@ -145,20 +145,40 @@ func (ff *FC) Backprop(lr float64, in, gradCost *mat.M64) error {
 	n := len(ff.layers)
 	ind := 0
 	var next *layer
+	var input *mat.M64
 	for i := range ff.layers {
 		ind = (n - 1) - i
+		if ind == 0 {
+			input = in
+		} else {
+			input = ff.layers[ind-1].state
+		}
+		/*
+			fmt.Printf("layers[%d]\n", ind)
+			fmt.Printf("	state: %+v\n", ff.layers[ind].state.GetData())
+			fmt.Printf("	b:%+v\n", ff.layers[ind].b.GetData())
+			fmt.Printf("	w:%+v\n", ff.layers[ind].w.GetData())
+			fmt.Printf("	gradSig: %+v\n", ff.layers[ind].gradSig.GetData())
+		*/
 		if i == 0 {
 			//output layer
-			gradCost, err = ff.layers[ind].Backprop(lr, in, gradCost, nil, nil, true)
+			//fmt.Printf("	params: gradCost:%+v gradSig:%+v w:%+v\n", gradCost.GetData(), nil, nil)
+			gradCost, err = ff.layers[ind].Backprop(lr, input, gradCost, nil, nil, true)
 			if err != nil {
 				return fmt.Errorf("layer %d: %s", ind, err.Error())
 			}
 			next = ff.layers[ind]
+			//fmt.Printf("	new b:%+v\n", ff.layers[ind].b.GetData())
+			//fmt.Printf("	new w:%+v\n", ff.layers[ind].w.GetData())
 		} else {
-			gradCost, err = ff.layers[ind].Backprop(lr, in, gradCost, next.gradSig, next.w, false)
+			//fmt.Printf("params: gradCost:%+v gradSig:%+v w:%+v\n", gradCost.GetData(), next.gradSig.GetData(), next.w.GetData())
+			gradCost, err = ff.layers[ind].Backprop(lr, input, gradCost, next.gradSig, next.w, false)
 			if err != nil {
 				return fmt.Errorf("layer %d: %s", ind, err.Error())
 			}
+			next = ff.layers[ind]
+			//fmt.Printf("	new b:%+v\n", ff.layers[ind].b.GetData())
+			//fmt.Printf("	new w:%+v\n", ff.layers[ind].w.GetData())
 		}
 	}
 	return nil

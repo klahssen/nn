@@ -172,29 +172,48 @@ func TestFCBackprop(t *testing.T) {
 	}
 	f1 := mockFF2(2, configs1)
 	f1.SetLayerData(0, []float64{1, 1, 0})
+	configs2 := []*LayerConfig{
+		{KeepState: true, Size: 2, FuncType: "iden", FuncParams: nil},
+		{KeepState: true, Size: 1, FuncType: "iden", FuncParams: nil},
+	}
+	f2 := mockFF2(2, configs2)
+	f2.SetLayerData(0, []float64{1, 1, 1, 1, 0, 0})
+	f2.SetLayerData(1, []float64{1, 1, 0})
 	tests := []struct {
 		n        *FC
 		lr       float64
 		in       *mat.M64
 		gradCost *mat.M64
+		newW     *mat.M64
+		newB     *mat.M64
 		err      error
 	}{
 		{
 			n:        f1,
 			lr:       0.5,
-			in:       mat.NewM64(2, 1, []float64{1, 1}),
+			in:       mat.NewM64(2, 1, []float64{1, 2}),
 			gradCost: mat.NewM64(1, 1, []float64{1}),
+			newW:     mat.NewM64(1, 2, []float64{0.5, 0}),
+			newB:     mat.NewM64(1, 1, []float64{-0.5}),
+			err:      nil,
+		},
+		{
+			n:        f2,
+			lr:       0.5,
+			in:       mat.NewM64(2, 1, []float64{1, 2}),
+			gradCost: mat.NewM64(1, 1, []float64{1}),
+			newW:     mat.NewM64(2, 2, []float64{1.25, 1.5, 1.25, 1.5}),
+			newB:     mat.NewM64(2, 1, []float64{0.25, 0.25}),
 			err:      nil,
 		},
 	}
 	for ind, test := range tests {
 		test.n.FeedForward(test.in)
-		/*
-			for i := range test.n.layers {
-				fmt.Printf("layer[%d]: %+v\n", i, test.n.layers[i])
-			}
-		*/
 		err := test.n.Backprop(test.lr, test.in, test.gradCost)
 		te.CheckError(ind, test.err, err)
+
+		te.DeepEqual(ind, "newB", test.newB, test.n.layers[0].b)
+		te.DeepEqual(ind, "newW", test.newW, test.n.layers[0].w)
+
 	}
 }

@@ -213,16 +213,18 @@ func (t *FCTrainer) TrainWithBackprop(r rand.Source, dropOutPeriod uint, dropOut
 	if test == nil || test.Size() == 0 {
 		return t.n, fmt.Errorf("test set is empty")
 	}
+	t.l.Printf("--- Training set ---\n")
 	if _, err := t.withBackprop(r, training, dropOutPeriod, dropOutRatio, batchSize); err != nil {
 		return t.n, err
 	}
 	//validation set
 	if validation != nil && validation.Size() > 0 {
+		t.l.Printf("--- Validation set ---\n")
 		if _, err := t.withBackprop(r, validation, dropOutPeriod, dropOutRatio, 1); err != nil {
 			return t.n, err
 		}
 	}
-	//test set
+	t.l.Printf("--- Test set ---\n")
 	_, err := t.testWith(test)
 	if err != nil {
 		return t.n, err
